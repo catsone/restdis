@@ -53,15 +53,17 @@ func loadConfig(c *cli.Context) (*service.Config, error) {
 	// Bind
 	bindOpt := c.String("bind")
 
-	if bindOpt == "" {
-		bindOpt = bind.Sniff()
+	if bindOpt != "" {
+		config.Bind = bindOpt
 	}
 
-	if bindOpt == "" {
-		bindOpt = ":7631"
+	if config.Bind == "" {
+		config.Bind = bind.Sniff()
 	}
 
-	config.Bind = bindOpt
+	if config.Bind == "" {
+		config.Bind = ":7631"
+	}
 
 	// Redis
 	redis := c.String("redis")
