@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/garyburd/redigo/redis"
@@ -36,7 +37,11 @@ func (r *RestdisResource) Default(c web.C, w http.ResponseWriter, req *http.Requ
 
 // RedisCommand handles all requests for Redis commands.
 func (r *RestdisResource) RedisCommand(c web.C, w http.ResponseWriter, req *http.Request) {
-	command, args := buildRedisCommandFromURI(req.RequestURI)
+	command, args, err := buildRedisCommandFromURI(req.RequestURI)
+	if err != nil {
+		writeError(c, err, http.StatusInternalServerError)
+		return
+	}
 
 	conn := r.pool.Get()
 	defer conn.Close()
@@ -86,13 +91,18 @@ func writeJSON(data interface{}, w http.ResponseWriter) error {
 }
 
 // buildRedisCommandFromURI splits a URI into a Redis command and arguments.
-func buildRedisCommandFromURI(uri string) (string, redis.Args) {
+func buildRedisCommandFromURI(uri string) (string, redis.Args, error) {
+	uri, err := url.QueryUnescape(uri)
+	if err != nil {
+		return "", nil, err
+	}
+
 	args := strings.Split(strings.Trim(uri, "/"), "/")
 	redisCommand := args[0]
 	redisArgs := redis.Args{}
 	redisArgs = redisArgs.AddFlat(args[1:])
 
-	return redisCommand, redisArgs
+	return redisCommand, redisArgs, nil
 }
 
 // formatResponse formats the response from Redis into a usable map for converting to JSON.
