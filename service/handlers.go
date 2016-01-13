@@ -92,12 +92,17 @@ func writeJSON(data interface{}, w http.ResponseWriter) error {
 
 // buildRedisCommandFromURI splits a URI into a Redis command and arguments.
 func buildRedisCommandFromURI(uri string) (string, redis.Args, error) {
-	uri, err := url.QueryUnescape(uri)
-	if err != nil {
-		return "", nil, err
+	args := strings.Split(strings.Trim(uri, "/"), "/")
+
+	for k, v := range args {
+		v, err := url.QueryUnescape(v)
+		if err != nil {
+			return "", nil, err
+		}
+
+		args[k] = v
 	}
 
-	args := strings.Split(strings.Trim(uri, "/"), "/")
 	redisCommand := args[0]
 	redisArgs := redis.Args{}
 	redisArgs = redisArgs.AddFlat(args[1:])
